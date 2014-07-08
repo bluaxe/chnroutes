@@ -1,0 +1,14 @@
+#!/bin/sh
+STATUS=$2 # vpn-up or vpn-down
+case "$STATUS" in
+	'vpn-up') # vpn up
+		exec /etc/openvpn/vpn-up.sh
+		exit 0	
+		;;
+	'vpn-down') #vp down
+		exec /etc/openvpn/vpn-down.sh
+		exit 0
+		;;
+esac
+
+exit 0

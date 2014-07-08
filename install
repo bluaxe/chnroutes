@@ -1,0 +1,8 @@
+#!/bin/sh
+# 此文件默认使用iproute2 包
+# 环境: Archlinux with NetworkManager and openvpn
+# 功能: VPN连接断开时的自动载入\移除静态路由表
+
+python2 chnroutes.py
+sudo cp vpn-*.sh /etc/openvpn/
+sudo cp 99_vpn /etc/NetworkManager/dispatcher.d/
