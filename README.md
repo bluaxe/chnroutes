@@ -29,6 +29,10 @@
 
 4. 重新连接VPN，观察日志测试。
 
+### Archlinux with NetWorkManager & openvpn
+
+执行install文件即可,它会让NetWorkManager在连接vpn时调用vpn-up.sh,断开时调用vpn-down.sh
+
 ### 自带方式
 
 1. 执行`python chnroutes.py -p old`, 这将生成`routes.txt`文本文件；
