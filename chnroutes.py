@@ -15,7 +15,7 @@ def generate_ovpn(_):
 #!/bin/bash -
 
 export PATH="/bin:/sbin:/usr/sbin:/usr/bin"
-OLDGW=$(ip route show 0/0 | sed -e 's/^default//')
+OLDGW=$(ip route show | grep -E '(enp38s0|wlo1)  proto static' | sed "s/^.*via/via/" | awk 'NR==1')
 
 ip -batch - <<EOF
 """
@@ -28,6 +28,7 @@ ip -batch - <<EOF
 
     upfile = open('vpn-up.sh', 'w')
     downfile = open('vpn-down.sh', 'w')
+    ipfile= open('my-ip-list','r')
 
     upfile.write(upscript_header)
     downfile.write(downscript_header)
@@ -35,6 +36,10 @@ ip -batch - <<EOF
     for ip, _, mask in results:
         upfile.write('route add %s/%s $OLDGW\n' % (ip, mask))
         downfile.write('route del %s/%s\n' % (ip, mask))
+
+    for ip in ipfile:
+        upfile.write('route add %s $OLDGW\n' % ip[0:len(ip)-1])
+        downfile.write('route del %s\n' % ip[0:len(ip)-1])
 
     upfile.write('EOF\n')
     downfile.write('EOF\n')
@@ -49,11 +54,16 @@ def generate_old(metric):
     results = fetch_ip_data()
 
     rfile = open('routes.txt','w')
+    ipfile= open('my-ip-list','r')
 
     rfile.write('max-routes %d\n\n' % (len(results) + 20))
 
     for ip, mask, _ in results:
         rfile.write("route %s %s net_gateway %d\n" % (ip, mask, metric))
+
+    for ip in ipfile:
+        #rfile.write("route %s net_gateway %d\n" % (ip[0:len(ip)-1] , metric))
+        pass
 
     rfile.close()
 
@@ -87,6 +97,7 @@ ip -batch - <<EOF
 
     upfile = open('ip-pre-up', 'w')
     downfile = open('ip-down', 'w')
+    ipfile= open('my-ip-list','r')
 
     upfile.write(upscript_header)
     downfile.write(downscript_header)
@@ -95,6 +106,12 @@ ip -batch - <<EOF
         upfile.write('route add %s/%s via $OLDGW metric %s\n' %
                      (ip, mask, metric))
         downfile.write('route del %s/%s\n' % (ip, mask))
+
+    for ip in ipfile:
+        upfile.write('route add %s via $OLDGW metric %s\n' %
+                     (ip[0:len(ip)-1], metric))
+        downfile.write('route del %s\n' % ip[0:len(ip)-1])
+
 
     upfile.write('EOF\n')
     downfile.write('''\
@@ -138,6 +155,7 @@ OLDGW=`cat /tmp/pptp_oldgw`
 
     upfile = open('ip-up','w')
     downfile = open('ip-down','w')
+    ipfile= open('my-ip-list','r')
 
     upfile.write(upscript_header)
     downfile.write(downscript_header)
@@ -145,6 +163,10 @@ OLDGW=`cat /tmp/pptp_oldgw`
     for ip, _, mask in results:
         upfile.write('route add %s/%s "${OLDGW}"\n' % (ip, mask))
         downfile.write('route delete %s/%s ${OLDGW}\n' % (ip, mask))
+
+    for ip in ipfile:
+        upfile.write('route add %s "${OLDGW}"\n' % ip[0:len(ip)-1])
+        downfile.write('route delete %s "${OLDGW}"\n' % ip[0:len(ip)-1])
 
     downfile.write('\n\nrm /tmp/pptp_oldgw\n')
 
@@ -164,6 +186,7 @@ for /F "tokens=3" %%* in ('route print ^| findstr "\\<0.0.0.0\\>"') do set "gw=%
 
     upfile = open('vpnup.bat','w')
     downfile = open('vpndown.bat','w')
+    ipfile= open('my-ip-list','r')
 
     upfile.write(upscript_header)
     upfile.write('ipconfig /flushdns\n\n')
@@ -175,6 +198,11 @@ for /F "tokens=3" %%* in ('route print ^| findstr "\\<0.0.0.0\\>"') do set "gw=%
         upfile.write('route add %s mask %s %s metric %d\n' %
                      (ip, mask, "%gw%", metric))
         downfile.write('route delete %s\n' % ip)
+
+    for ip in ipfile:
+        upfile.write('route add %s %s metric %d\n' %
+                     (ip[0:len(ip)-1], "%gw%", metric))
+        downfile.write('route delete %s\n' % ip[0:len(ip)-1])
 
     upfile.close()
     downfile.close()
